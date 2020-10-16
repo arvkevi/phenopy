@@ -113,9 +113,21 @@ def score(input_file, output_file='-', records_file=None, annotations_file=None,
                 output_fh.write('\n')
 
 
+def cluster(input_file, method, *args, **kwargs):
+    """
+    :param input_file:
+    :param method:
+    :param args:
+    :param kwargs:
+    :return:
+    """
+
+
+
 def main():
     fire.Fire({
         'score': score,
+        'cluster': cluster
     })
 
 
