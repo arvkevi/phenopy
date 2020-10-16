@@ -30,6 +30,9 @@ setup(
         'obonet',
         'pandas',
         'scipy',
+        'umap-learn',
+        'scikit-learn',
+        'matplotlib'
 
     ]
 )
