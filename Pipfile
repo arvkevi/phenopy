@@ -15,6 +15,9 @@ fire = "*"
 pandas = "*"
 numpy = "*"
 scipy = "*"
+umap-learn = "*"
+scikit-learn = "*"
+matplotlib = "*"
 
 [requires]
 python_version = "3.7"
