@@ -1,14 +1,18 @@
 import fire
 import itertools
 import sys
+import os
 
 from configparser import NoOptionError, NoSectionError
 from multiprocessing import Pool
 
 from phenopy import open_or_stdout, generate_annotated_hpo_network
-from phenopy.config import config, logger
+from phenopy.config import config, logger, project_data_dir
 from phenopy.score import Scorer
 from phenopy.util import parse_input, half_product
+from phenopy.cluster import process_kfile, prep_cluster_data, prep_feature_array, apply_umap, dbscan
+from phenopy.plot import plot_basic_dbscan
+
 
 
 def score(input_file, output_file='-', records_file=None, annotations_file=None, custom_disease_file=None, ages_distribution_file=None,
@@ -113,15 +117,56 @@ def score(input_file, output_file='-', records_file=None, annotations_file=None,
                 output_fh.write('\n')
 
 
-def cluster(input_file, method, *args, **kwargs):
+def cluster(input_file, kfile=None, k=1000, n_neighbors=30, n_components=2, min_dist=0.01, metric='euclidean', eps=0.40, min_samples=10):
     """
-    :param input_file:
-    :param method:
-    :param args:
-    :param kwargs:
-    :return:
+    :param input_file: file containing phenotypes encoded in HPO ids
+    :param kfile: phenotype to group id conversion (optional)
+    :param k: number of phenotype features
+    :param n_neighbors: UMAP num neightbors
+    :param n_components: UMAP num components
+    :param min_dist: UMAP min distances
+    :param metric: UMAP metric
+    :param eps: DBSCAN eps
+    :param min_samples: DBSCAN min_samples
+    :return: None
     """
 
+    if kfile is None:
+            kfile = os.path.join(project_data_dir, "phenotype_groups.txt")
+
+    feature_to_hps, hp_to_feature, n_features = process_kfile(kfile, k=k)
+    results_df = prep_cluster_data(input_file, kfile)
+    logger.info(f"Loading: {input_file}")
+    X_vect = prep_feature_array(results_df, n_features)
+    logger.info("Performing UMAP dimensionality reduction")
+
+    umap_result = apply_umap(X_vect,
+                             n_neighbors=n_neighbors,
+                             n_components=n_components,
+                             min_dist=min_dist,
+                             metric=metric)
+
+    logger.info("Clustering using DBSCAN")
+
+    labels, core_samples_mask, stats = dbscan(umap_result,
+                                              eps=eps,
+                                              min_samples=min_samples)
+
+    logger.info(f"Num. Clusters: {stats['n_clusters']}")
+    logger.info(f"Num. noise points: {stats['n_noise']}")
+    logger.info(f"Silhouette_score: {stats['silhouette_score']}")
+
+    output_df = results_df.copy()[['id']]
+    output_df['cluster_id'] = labels
+    dbscan_plot = plot_basic_dbscan(umap_result, core_samples_mask, labels)
+
+    input_file_name, extension = os.path.splitext(input_file)
+    output_data_name = input_file_name + ".clusters.tsv"
+    output_plot_name = input_file_name + ".clusters.png"
+    logger.info(f"Writing results to {output_data_name}")
+    output_df.to_csv(output_data_name, index=None, header=None, sep="\t")
+    logger.info(f"Saving plot {output_plot_name}")
+    dbscan_plot.savefig(output_plot_name)
 
 
 def main():
