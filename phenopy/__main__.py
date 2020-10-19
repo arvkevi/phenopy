@@ -5,6 +5,7 @@ import os
 
 from configparser import NoOptionError, NoSectionError
 from multiprocessing import Pool
+import pandas as pd
 
 from phenopy import open_or_stdout, generate_annotated_hpo_network
 from phenopy.config import config, logger, project_data_dir
@@ -135,7 +136,8 @@ def cluster(input_file, kfile=None, k=1000, n_neighbors=30, n_components=2, min_
             kfile = os.path.join(project_data_dir, "phenotype_groups.txt")
 
     feature_to_hps, hp_to_feature, n_features = process_kfile(kfile, k=k)
-    results_df = prep_cluster_data(input_file, kfile)
+    records = parse_input(input_file)
+    results_df = prep_cluster_data(pd.DataFrame.from_dict(records), hp_to_feature)
     logger.info(f"Loading: {input_file}")
     X_vect = prep_feature_array(results_df, n_features)
     logger.info("Performing UMAP dimensionality reduction")
