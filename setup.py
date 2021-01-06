@@ -22,17 +22,20 @@ setup(
             f'{__project__} = {__project__}.__main__:main',
         ]
     },
+    include_package_data=True,
     install_requires=[
         'fire',
-        'gensim',
+        'gensim<4.0 ',
         'networkx',
         'numpy',
         'obonet',
         'pandas',
+        'joblib',
         'scipy',
         'umap-learn',
         'scikit-learn',
         'matplotlib'
-
+        'lightgbm',
+        'requests',
     ]
 )
