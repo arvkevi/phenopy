@@ -34,7 +34,7 @@ setup(
         'scipy',
         'umap-learn',
         'scikit-learn',
-        'matplotlib'
+        'matplotlib',
         'lightgbm',
         'requests',
     ]
